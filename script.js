@@ -2,28 +2,29 @@ function analyzeURL() {
     const url = document.getElementById("urlInput").value;
     let result = "";
 
+    // Vérification input
     if (!url) {
         result = "Please enter a URL";
+        document.getElementById("result").innerText = result;
+        return;
     }
 
-<<<<<<< HEAD
-
-    //  HTTPS check
+    // HTTPS check
     if (!url.startsWith("https://")) {
-        result += "Not secure (no HTTPS)\n";
+        result += "⚠Not secure (no HTTPS)\n";
     } else {
         result += "Uses HTTPS\n";
     }
 
-    // Long URL check
+    // URL length check
     if (url.length > 30) {
-        result += "⚠URL is too long (suspicious)\n";
+        result += " URL is too long (suspicious)\n";
     }
 
     // Suspicious keywords
     const suspiciousWords = ["login", "verify", "free", "bank"];
     suspiciousWords.forEach(word => {
-        if (url.includes(word)) {
+        if (url.toLowerCase().includes(word)) {
             result += `⚠Suspicious keyword detected: ${word}\n`;
         }
     });
@@ -34,36 +35,4 @@ function analyzeURL() {
     }
 
     document.getElementById("result").innerText = result;
-
-=======
->>>>>>> feature/suspicious-keywords
-    document.getElementById("result").innerText = result;
 }
-
-if (!url.startsWith("https://")) {
-    result += "Not secure (no HTTPS)\n";
-} else {
-    result += "Uses HTTPS\n";
-}
-
-if (url.length > 30) {
-    result += "URL is too long (suspicious)\n";
-}
-
-if (result === "") {
-    result = "URL seems safe";
-<<<<<<< HEAD
-
-}
-=======
-}
-
-
-const suspiciousWords = ["login", "verify", "free", "bank"];
-
-suspiciousWords.forEach(word => {
-    if (url.includes(word)) {
-        result += `Suspicious keyword detected: ${word}\n`;
-    }
-});
->>>>>>> feature/suspicious-keywords
