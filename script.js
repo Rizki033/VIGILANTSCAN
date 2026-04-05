@@ -6,6 +6,7 @@ function analyzeURL() {
         result = "Please enter a URL";
     }
 
+<<<<<<< HEAD
 
     //  HTTPS check
     if (!url.startsWith("https://")) {
@@ -34,6 +35,8 @@ function analyzeURL() {
 
     document.getElementById("result").innerText = result;
 
+=======
+>>>>>>> feature/suspicious-keywords
     document.getElementById("result").innerText = result;
 }
 
@@ -49,5 +52,18 @@ if (url.length > 30) {
 
 if (result === "") {
     result = "URL seems safe";
+<<<<<<< HEAD
 
 }
+=======
+}
+
+
+const suspiciousWords = ["login", "verify", "free", "bank"];
+
+suspiciousWords.forEach(word => {
+    if (url.includes(word)) {
+        result += `Suspicious keyword detected: ${word}\n`;
+    }
+});
+>>>>>>> feature/suspicious-keywords
