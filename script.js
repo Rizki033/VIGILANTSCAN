@@ -6,6 +6,7 @@ function analyzeURL() {
         result = "Please enter a URL";
     }
 
+
     //  HTTPS check
     if (!url.startsWith("https://")) {
         result += "Not secure (no HTTPS)\n";
@@ -32,4 +33,21 @@ function analyzeURL() {
     }
 
     document.getElementById("result").innerText = result;
+
+    document.getElementById("result").innerText = result;
+}
+
+if (!url.startsWith("https://")) {
+    result += "Not secure (no HTTPS)\n";
+} else {
+    result += "Uses HTTPS\n";
+}
+
+if (url.length > 30) {
+    result += "URL is too long (suspicious)\n";
+}
+
+if (result === "") {
+    result = "URL seems safe";
+
 }
