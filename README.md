@@ -4,7 +4,7 @@
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 vigilantscan/
@@ -57,22 +57,7 @@ vigilantscan/
 
 ---
 
-## 🚀 Getting Started
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Run dev server
-npm run dev
-
-# 3. Build for production
-npm run build
-```
-
----
-
-## 📦 Dependencies
+##  Dependencies
 
 | Package            | Purpose                          |
 |--------------------|----------------------------------|
@@ -83,7 +68,7 @@ npm run build
 
 ---
 
-## 🎨 Design System (Stitches Tokens)
+## Design System (Stitches Tokens)
 
 ```js
 // src/styles/theme.js
@@ -103,7 +88,7 @@ createStitches({
 
 ---
 
-## 🔑 Key Components
+## Key Components
 
 ### `<NewScanHero>`
 - URL input with focus glow (`box-shadow: $brandGlow`)
@@ -126,7 +111,7 @@ createStitches({
 
 ---
 
-## 🛡️ Vulnerability Severity System
+##  Vulnerability Severity System
 
 | Level    | Color     | Use Case                    |
 |----------|-----------|-----------------------------|
@@ -137,5 +122,5 @@ createStitches({
 
 ---
 
-## 📄 License
+## License
 MIT — Built with VigilantScan design system
