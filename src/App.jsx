@@ -439,7 +439,7 @@ export default function App() {
             <UserPill>
               <UserAvatar>P</UserAvatar>
               <div>
-                <UserName>User Pro</UserName>
+                <UserName>0xRizki</UserName>
                 <UserSub>Standard Plan</UserSub>
               </div>
             </UserPill>

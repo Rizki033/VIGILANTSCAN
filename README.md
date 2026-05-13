@@ -4,10 +4,37 @@
 
 ---
 
+## Screenshots
+
+### Dashboard
+
+![Dashboard preview](assets/images/Dashboard.png)
+
+### Scans
+
+![Scans preview](assets/images/Scans.png)
+
+### Reports
+
+![Reports preview](assets/images/Reports.png)
+
+### Settings
+
+![Settings preview](assets/images/Settings.png)
+
+---
+
 ##  Project Structure
 
 ```
 vigilantscan/
+├── assets/
+│   └── images/
+│       ├── Dashboard.png
+│       ├── Reports.png
+│       ├── Scans.png
+│       └── Settings.png
+│
 ├── public/
 │   ├── index.html
 │   └── favicon.svg           # Shield icon
