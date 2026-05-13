@@ -86,12 +86,12 @@ vigilantscan/
 
 ##  Vulnerability Severity System
 
-| Level    | Color     | Use Case                    |
-|----------|-----------|-----------------------------|
-| CRITICAL | `#ef4444` | SQL Injection, RCE, exposed files |
-| WARNING  | `#f59e0b` | Weak TLS, outdated versions |
-| INFO     | `#10b981` | Best practice, missing headers |
-| PASSED   | `#10b981` | Clean test result           |
+| Level    | Use Case                           |
+|----------|------------------------------------|
+| CRITICAL | SQL Injection, RCE, exposed files  |
+| WARNING  | Weak TLS, outdated versions        |
+| INFO     | Best practice, missing headers     |
+| PASSED   | Clean test result                  |
 
 ---
 
