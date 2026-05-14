@@ -1,0 +1,68 @@
+stages:
+  - build
+  - test
+  - deploy
+
+default:
+  image: node:20
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+      - node_modules/
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+build-job:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    name: "dist-$CI_COMMIT_REF_SLUG"
+    paths:
+      - dist/
+    expire_in: 1 week
+  # If your shell runner uses tags, uncomment the next lines:
+  # tags:
+  #   - shell
+
+unit-test-job:
+  stage: test
+  script:
+    - echo "Running unit tests if they are configured in package.json"
+    - npm run test --if-present
+  # tags:
+  #   - shell
+
+lint-test-job:
+  stage: test
+  script:
+    - npm run lint
+  # tags:
+  #   - shell
+
+deploy-job:
+  stage: deploy
+  needs:
+    - job: build-job
+      artifacts: true
+  before_script: []
+  script:
+    - mv dist public
+  artifacts:
+    paths:
+      - public
+  pages: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  environment:
+    name: production
+  # tags:
+  #   - shell
