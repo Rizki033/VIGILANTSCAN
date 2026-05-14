@@ -35,49 +35,28 @@ vigilantscan/
 │       ├── Scans.png
 │       └── Settings.png
 │
-├── public/
-│   ├── index.html
-│   └── favicon.svg           # Shield icon
-│
-├── src/
-│   ├── App.jsx               ← Root component + layout composition
-│   ├── main.jsx              ← ReactDOM.createRoot entry point
-│   │
-│   ├── styles/
-│   │   └── theme.js          ← Design tokens (colors, space, radii, fonts)
-│   │
-│   ├── data/
-│   │   └── mockData.js       ← All static/simulated data (logs, vulns, reports)
-│   │
-│   ├── hooks/
-│   │   └── useScan.js        ← Scan simulation + terminal scroll hooks
-│   │
-│   ├── lib/
-│   │   └── utils.js          ← Helpers (formatDate, severityColor, etc.)
-│   │
-│   └── components/
-│       ├── layout/
-│       │   ├── Sidebar.jsx   ← Left navigation + system status
-│       │   └── TopBar.jsx    ← Header: logo, search, bell, avatar
-│       │
-│       ├── dashboard/
-│       │   ├── NewScanHero.jsx          ← URL input + START SCAN button
-│       │   ├── VulnerabilitySummary.jsx ← Critical/Warning/Info score cards
-│       │   └── RecentReports.jsx        ← Paginated reports table
-│       │
-│       ├── scan/
-│       │   ├── Terminal.jsx      ← Live log window with progress bar
-│       │   └── ActivityChart.jsx ← 24h bar chart (recharts)
-│       │
-│       ├── findings/
-│       │   ├── FindingsPanel.jsx ← Right sidebar panel wrapper
-│       │   └── FindingCard.jsx   ← Accordion card: probe + remediation
-│       │
-│       └── ui/
-│           ├── Badge.jsx         ← Severity badge (Critical/Warning/Info/Passed)
-│           ├── Card.jsx          ← Surface container with border
-│           └── Icons.jsx         ← All SVG icon components
-│
+├── index.html
+├── main.jsx                  ← ReactDOM entry point
+├── App.jsx                   ← Root component + layout composition
+├── styles/
+│   └── theme.js              ← Design tokens and global styles
+├── data/
+│   └── mockData.js           ← Simulated dashboard data
+├── hooks/
+│   └── useScan.js            ← Scan simulation logic
+├── components/
+│   ├── ActivityChart.jsx
+│   ├── NotificationPopover.jsx
+│   ├── ReportModal.jsx
+│   └── ThreatIntelBar.jsx
+├── views/
+│   ├── DashboardView.jsx
+│   ├── ReportsView.jsx
+│   ├── ScansView.jsx
+│   └── SettingsView.jsx
+├── ui/
+│   └── shell.jsx             ← Shared shell layout
+├── icons.jsx                 ← SVG icon set
 ├── package.json
 └── vite.config.js
 ```
