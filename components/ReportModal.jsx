@@ -62,6 +62,21 @@ const Row = styled('div', {
   gap: '$1',
 });
 
+const Grid = styled('div', {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: '$2',
+});
+
+const List = styled('ul', {
+  margin: 0,
+  paddingLeft: '18px',
+  display: 'grid',
+  gap: '$1',
+  color: '$textMuted',
+  lineHeight: 1.5,
+});
+
 const Label = styled('span', {
   fontSize: '0.65rem',
   textTransform: 'uppercase',
@@ -116,6 +131,60 @@ export default function ReportModal({ report, onClose }) {
             <Label>Score</Label>
             <span>{report.score ?? '—'}</span>
           </Row>
+          <Grid>
+            <Row>
+              <Label>Asset Profile</Label>
+              <span>{report.assetLabel ?? report.assetProfile ?? '—'}</span>
+            </Row>
+            <Row>
+              <Label>Workflow Status</Label>
+              <span>{report.workflowStatus ?? 'needs-review'}</span>
+            </Row>
+          </Grid>
+          {report.phishingRisk ? (
+            <Row>
+              <Label>Phishing Risk</Label>
+              <span>
+                {report.phishingRisk.score}/100
+                {report.phishingRisk.signals?.length ? ` · ${report.phishingRisk.signals.length} signals` : ''}
+              </span>
+            </Row>
+          ) : null}
+          {report.inventory ? (
+            <Row>
+              <Label>Attack Surface</Label>
+              <List>
+                <li>
+                  Host: {report.inventory.hostname} {'->'} {report.inventory.finalHostname}
+                </li>
+                <li>{report.inventory.internetExposed ? 'Internet exposed' : 'Private / internal scope'}</li>
+                <li>{report.inventory.authSurface ? 'Authentication-like surface observed' : 'No auth-like surface observed'}</li>
+                {report.inventory.sensitivePaths?.slice(0, 3).map((path) => (
+                  <li key={path}>Sensitive path: {path}</li>
+                ))}
+              </List>
+            </Row>
+          ) : null}
+          {report.storyline?.length ? (
+            <Row>
+              <Label>Attack Path Storyline</Label>
+              <List>
+                {report.storyline.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </List>
+            </Row>
+          ) : null}
+          {report.drift ? (
+            <Row>
+              <Label>Drift Detection</Label>
+              <List>
+                {report.drift.changes?.slice(0, 6).map((change) => (
+                  <li key={change}>{change}</li>
+                ))}
+              </List>
+            </Row>
+          ) : null}
           <Row>
             <Label>Raw snapshot</Label>
             <Mono>{JSON.stringify(report, null, 2)}</Mono>

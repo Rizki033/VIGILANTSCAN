@@ -29,8 +29,25 @@ import {
   UrlInput,
 } from '../ui/shell.jsx';
 import { IconRadar } from '../icons.jsx';
+import { styled } from '../styles/theme.js';
 
 const ActivityChart = lazy(() => import('../components/ActivityChart.jsx'));
+
+const ProfileSelect = styled('select', {
+  minHeight: '40px',
+  borderRadius: '$sm',
+  border: '1px solid rgba(77, 97, 252, 0.28)',
+  background: '$bgMuted',
+  color: '$text',
+  padding: '0 $3',
+  fontSize: '$2',
+  outline: 'none',
+  flexShrink: 0,
+  '&:focus': {
+    borderColor: '$brand',
+    boxShadow: '0 0 0 2px rgba(77, 97, 252, 0.18)',
+  },
+});
 
 function statusLabel(status) {
   if (status === 'critical') return 'Critical';
@@ -58,6 +75,9 @@ function displayDomain(activeTarget) {
 export default function DashboardView({
   target,
   setTarget,
+  assetProfile,
+  setAssetProfile,
+  assetProfiles,
   status,
   progress,
   error,
@@ -85,6 +105,18 @@ export default function DashboardView({
               }
             }}
           />
+          <ProfileSelect
+            aria-label="Asset profile"
+            value={assetProfile}
+            onChange={(event) => setAssetProfile(event.target.value)}
+            disabled={status === 'running'}
+          >
+            {assetProfiles.map((profile) => (
+              <option key={profile.value} value={profile.value}>
+                {profile.label}
+              </option>
+            ))}
+          </ProfileSelect>
           <StartButton type="button" disabled={status === 'running'} onClick={startScan}>
             <IconRadar />
             {status === 'running' ? 'Scanning…' : 'Start Scan'}

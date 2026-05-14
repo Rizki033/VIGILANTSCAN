@@ -1,13 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  buildFindings,
-  computeRisk,
-  computeScore,
-  riskToStatus,
-  stagedLogs,
-  starterReports,
-  summarizeFindings,
-} from '../data/mockData.js';
+import { useEffect, useMemo, useState } from 'react';
+import { designSummary, starterReports } from '../data/mockData.js';
+import { analyzeTarget, buildReport } from '../lib/securityAnalysis.js';
+
+const STORAGE_KEY = 'vigilantscan:reports';
 
 function normalizeUrl(rawValue) {
   const value = rawValue.trim();
@@ -27,50 +22,66 @@ function normalizeUrl(rawValue) {
   }
 }
 
-function createReport(normalizedUrl, summary) {
-  const reportNumber = `RPT-${Math.floor(Date.now() / 1000)
-    .toString()
-    .slice(-4)}`;
-  const risk = computeRisk(summary);
+function delay(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
-  return {
-    id: reportNumber,
-    date: new Date().toLocaleDateString('en-CA', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }),
-    target: normalizedUrl,
-    status: riskToStatus(risk),
-    risk,
-    score: computeScore(summary),
-  };
+function hydrateReports() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return starterReports;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : starterReports;
+  } catch {
+    return starterReports;
+  }
 }
 
 export function useScan() {
   const [target, setTarget] = useState('');
+  const [assetProfile, setAssetProfile] = useState('production');
   const [status, setStatus] = useState('idle');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const [logs, setLogs] = useState([
-    'Scanner ready. Submit a target to begin passive analysis.',
+    'Scanner ready. Submit a target to begin a browser-based security analysis.',
   ]);
   const [findings, setFindings] = useState([]);
-  const [reports, setReports] = useState(starterReports);
+  const [reports, setReports] = useState([]);
+  const [activeReport, setActiveReport] = useState(null);
   const [activeTarget, setActiveTarget] = useState('');
-  const timerRef = useRef(null);
+  const [storyline, setStoryline] = useState([]);
+  const [inventory, setInventory] = useState(null);
+  const [phishingRisk, setPhishingRisk] = useState(null);
+  const [scanDiff, setScanDiff] = useState(null);
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        window.clearInterval(timerRef.current);
-      }
-    };
+    setReports(hydrateReports());
   }, []);
 
-  const summary = useMemo(() => summarizeFindings(findings), [findings]);
+  useEffect(() => {
+    if (reports.length > 0) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+    }
+  }, [reports]);
 
-  const startScan = () => {
+  const summary = useMemo(() => {
+    if (findings.length === 0) {
+      return designSummary;
+    }
+
+    return findings.reduce(
+      (acc, finding) => {
+        acc[finding.severity] += 1;
+        return acc;
+      },
+      { critical: 0, warning: 0, info: 0, passed: 0 }
+    );
+  }, [findings]);
+
+  const startScan = async () => {
     let normalizedUrl;
 
     try {
@@ -81,66 +92,82 @@ export function useScan() {
       return;
     }
 
-    if (timerRef.current) {
-      window.clearInterval(timerRef.current);
-    }
-
     setError('');
     setStatus('running');
-    setProgress(0);
+    setProgress(6);
     setFindings([]);
+    setStoryline([]);
+    setInventory(null);
+    setPhishingRisk(null);
+    setScanDiff(null);
+    setActiveReport(null);
     setActiveTarget(normalizedUrl);
-    setLogs([`Target queued: ${normalizedUrl}`]);
+    setLogs([`Target queued: ${normalizedUrl}`, `Asset profile: ${assetProfile}`]);
 
-    const generatedFindings = buildFindings(normalizedUrl);
-    const completedSummary = summarizeFindings(generatedFindings);
-    const totalSteps = stagedLogs.length;
-    let currentStep = 0;
+    try {
+      const previousReport = reports.find((report) => report.target === normalizedUrl) || null;
+      const analysis = await analyzeTarget(normalizedUrl, assetProfile);
 
-    timerRef.current = window.setInterval(() => {
-      const nextStep = stagedLogs[currentStep];
-
-      setLogs((previousLogs) => [...previousLogs, nextStep]);
-      currentStep += 1;
-      setProgress(Math.round((currentStep / totalSteps) * 100));
-
-      if (currentStep >= totalSteps) {
-        window.clearInterval(timerRef.current);
-        timerRef.current = null;
-
-        setTimeout(() => {
-          setFindings(generatedFindings);
-          setLogs((previousLogs) => [
-            ...previousLogs,
-            `Completed. ${generatedFindings.length} observations recorded.`,
-          ]);
-          setReports((previousReports) => [
-            createReport(normalizedUrl, completedSummary),
-            ...previousReports,
-          ]);
-          setStatus('complete');
-        }, 250);
+      const totalLogs = analysis.logs.length;
+      for (let i = 0; i < totalLogs; i += 1) {
+        setLogs((previousLogs) => [...previousLogs, analysis.logs[i]]);
+        setProgress(Math.min(78, Math.round(((i + 1) / totalLogs) * 78) + 8));
+        await delay(220);
       }
-    }, 450);
+
+      const report = buildReport({
+        previousReport,
+        targetUrl: normalizedUrl,
+        assetProfile,
+        analysis,
+      });
+
+      setProgress(92);
+      await delay(180);
+
+      setFindings(report.findings);
+      setStoryline(report.storyline);
+      setInventory(report.inventory);
+      setPhishingRisk(report.phishingRisk);
+      setScanDiff(report.drift);
+      setActiveReport(report);
+      setReports((previousReports) => [report, ...previousReports].slice(0, 18));
+      setLogs((previousLogs) => [
+        ...previousLogs,
+        `Completed. Risk ${report.risk} · Score ${report.score} · ${report.findings.length} observations.`,
+      ]);
+      setProgress(100);
+      setStatus('complete');
+    } catch (scanError) {
+      setError(scanError.message || 'Unable to complete the scan.');
+      setLogs((previousLogs) => [
+        ...previousLogs,
+        `[FAILED] ${scanError.message || 'Unexpected scan failure'}`,
+      ]);
+      setProgress(0);
+      setStatus('error');
+    }
   };
 
   const resetScan = () => {
-    if (timerRef.current) {
-      window.clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
     setStatus('idle');
     setProgress(0);
     setError('');
     setActiveTarget('');
     setFindings([]);
-    setLogs(['Scanner ready. Submit a target to begin passive analysis.']);
+    setStoryline([]);
+    setInventory(null);
+    setPhishingRisk(null);
+    setScanDiff(null);
+    setActiveReport(null);
+    setLogs(['Scanner ready. Submit a target to begin a browser-based security analysis.']);
   };
 
   return {
     target,
     setTarget,
+    assetProfile,
+    setAssetProfile,
     status,
     progress,
     error,
@@ -148,7 +175,12 @@ export function useScan() {
     findings,
     summary,
     reports,
+    activeReport,
     activeTarget,
+    storyline,
+    inventory,
+    phishingRisk,
+    scanDiff,
     startScan,
     resetScan,
   };

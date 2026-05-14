@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { designSummary, featuredIdleFinding, navItems } from './data/mockData.js';
 import { useScan } from './hooks/useScan.js';
+import { createJsonExport, createSarifExport, getAssetProfiles } from './lib/securityAnalysis.js';
 import { styled } from './styles/theme.js';
 import { IconBell, IconShield, NavIcon } from './icons.jsx';
 import ThreatIntelBar from './components/ThreatIntelBar.jsx';
@@ -329,6 +330,25 @@ const Muted = styled('p', {
   lineHeight: 1.5,
 });
 
+const SectionCard = styled('div', {
+  display: 'grid',
+  gap: '$1',
+  padding: '$2',
+  borderRadius: '$sm',
+  border: '1px solid $borderStrong',
+  background: 'rgba(255,255,255,0.03)',
+});
+
+const MiniList = styled('ul', {
+  margin: 0,
+  paddingLeft: '18px',
+  display: 'grid',
+  gap: '$1',
+  color: '$textMuted',
+  fontSize: '$1',
+  lineHeight: 1.5,
+});
+
 function titleColor(severity) {
   if (severity === 'critical') return '#ff4d4d';
   if (severity === 'warning') return '#ff9933';
@@ -336,15 +356,15 @@ function titleColor(severity) {
   return '#f0f2fa';
 }
 
-function downloadReport(findings, target) {
+function downloadTextReport(text, target, extension) {
   const blob = new Blob(
-    [JSON.stringify({ generated: new Date().toISOString(), target, findings }, null, 2)],
-    { type: 'application/json' }
+    [text],
+    { type: extension === 'sarif' ? 'application/sarif+json' : 'application/json' }
   );
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `vigilantscan-report-${Date.now()}.json`;
+  a.download = `vigilantscan-report-${target || 'scan'}-${Date.now()}.${extension}`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -358,6 +378,8 @@ export default function App() {
   const {
     target,
     setTarget,
+    assetProfile,
+    setAssetProfile,
     status,
     progress,
     error,
@@ -365,10 +387,17 @@ export default function App() {
     findings,
     summary,
     reports,
+    activeReport,
     activeTarget,
+    storyline,
+    inventory,
+    phishingRisk,
+    scanDiff,
     startScan,
     resetScan,
   } = useScan();
+
+  const assetProfiles = useMemo(() => getAssetProfiles(), []);
 
   const summaryDisplay = findings.length > 0 ? summary : designSummary;
 
@@ -412,6 +441,7 @@ export default function App() {
   };
 
   const intel = featured.intel || { mitre: '—', epss: 0, cve: '—' };
+  const reportForExport = activeReport || reportModal;
 
   return (
     <Page>
@@ -471,6 +501,9 @@ export default function App() {
                   <DashboardView
                     target={target}
                     setTarget={setTarget}
+                    assetProfile={assetProfile}
+                    setAssetProfile={setAssetProfile}
+                    assetProfiles={assetProfiles}
                     status={status}
                     progress={progress}
                     error={error}
@@ -509,6 +542,9 @@ export default function App() {
                     <Chip>MITRE {intel.mitre}</Chip>
                     <Chip>EPSS {typeof intel.epss === 'number' ? intel.epss.toFixed(2) : intel.epss}</Chip>
                     <Chip>{intel.cve}</Chip>
+                    {inventory?.internetExposed !== undefined ? (
+                      <Chip>{inventory.internetExposed ? 'Internet exposed' : 'Private scope'}</Chip>
+                    ) : null}
                   </IntelRow>
                   {findingList.length > 1 ? (
                     <CarouselNav>
@@ -546,15 +582,104 @@ export default function App() {
                     ) : null}
                     <Muted>{featured.detail}</Muted>
                     <CodeBlock>{featured.remediationCode || featured.remediation || ''}</CodeBlock>
+                    {storyline.length > 0 ? (
+                      <SectionCard>
+                        <SectionLabel>Attack Path Storyline</SectionLabel>
+                        <MiniList>
+                          {storyline.map((step) => (
+                            <li key={step}>{step}</li>
+                          ))}
+                        </MiniList>
+                      </SectionCard>
+                    ) : null}
+                    {inventory ? (
+                      <SectionCard>
+                        <SectionLabel>Attack Surface</SectionLabel>
+                        <Muted>
+                          Host {inventory.hostname} {'->'} {inventory.finalHostname}
+                        </Muted>
+                        <Muted>
+                          {inventory.authSurface ? 'Authentication-like surface detected' : 'No auth-like surface observed'}
+                        </Muted>
+                        {inventory.sensitivePaths.length > 0 ? (
+                          <MiniList>
+                            {inventory.sensitivePaths.map((item) => (
+                              <li key={item}>Sensitive path signal: {item}</li>
+                            ))}
+                          </MiniList>
+                        ) : null}
+                      </SectionCard>
+                    ) : null}
+                    {phishingRisk ? (
+                      <SectionCard>
+                        <SectionLabel>Phishing / Brand Abuse</SectionLabel>
+                        <Muted>Score {phishingRisk.score}/100</Muted>
+                        {phishingRisk.signals.length > 0 ? (
+                          <MiniList>
+                            {phishingRisk.signals.slice(0, 4).map((signal) => (
+                              <li key={signal}>{signal}</li>
+                            ))}
+                          </MiniList>
+                        ) : (
+                          <Muted>No strong phishing-style signals observed in this scan.</Muted>
+                        )}
+                      </SectionCard>
+                    ) : null}
+                    {scanDiff ? (
+                      <SectionCard>
+                        <SectionLabel>Drift Detection</SectionLabel>
+                        <Muted>{scanDiff.summary}</Muted>
+                        <MiniList>
+                          {scanDiff.changes.slice(0, 4).map((change) => (
+                            <li key={change}>{change}</li>
+                          ))}
+                        </MiniList>
+                      </SectionCard>
+                    ) : null}
                   </FindingBlock>
                   <DownloadBtn
                     type="button"
-                    onClick={() =>
-                      downloadReport(findings.length ? findings : [featured], activeTarget || target)
-                    }
+                    onClick={() => {
+                      if (!reportForExport) {
+                        downloadTextReport(
+                          JSON.stringify(
+                            {
+                              generated: new Date().toISOString(),
+                              target: activeTarget || target,
+                              findings: findings.length ? findings : [featured],
+                            },
+                            null,
+                            2
+                          ),
+                          activeTarget || target || 'scan',
+                          'json'
+                        );
+                        return;
+                      }
+
+                      downloadTextReport(
+                        createJsonExport(reportForExport),
+                        reportForExport.target || activeTarget || target || 'scan',
+                        'json'
+                      );
+                    }}
                   >
-                    Download Report
+                    Download JSON Report
                   </DownloadBtn>
+                  {reportForExport ? (
+                    <DownloadBtn
+                      type="button"
+                      onClick={() =>
+                        downloadTextReport(
+                          createSarifExport(reportForExport),
+                          reportForExport.target || activeTarget || target || 'scan',
+                          'sarif'
+                        )
+                      }
+                    >
+                      Export SARIF
+                    </DownloadBtn>
+                  ) : null}
                 </FindingsAside>
               ) : null}
             </WorkspaceMain>
